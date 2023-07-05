@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Control Panel</title>
+    <link rel="stylesheet" type="text/css" href="control_panel.css">
+  </head>
+  <body>
+    <div class = 'mediaInterface'>
+
+      <div class = 'row1'>
+        <button id = "getVersion">Get Version</button>
+        <button id = "mediaInfoUpdate">Media Update</button>
+      </div>
+
+      <div class = 'row2'>
+        <input type="range" id="scrubber" min="0" max="100" step="1" value="0"></input>
+        <span id="timecode">0:00</span>
+      </div>
+
+    </div>
+
+    <div class = 'mediaControls'>
+      <button id = "rewind10S"> -10S</button>
+      <button id = "frameBack"> Frame Back</button>
+      <button id="playButton">Play</button>
+      <button id="pauseButton">Pause</button>      
+      <button id = "frameForward"> Frame Forward</button>
+      <button id = "forward10S"> +10S</button>
+    </div>
+
+    <div class = 'obsControls'>
+
+      <div class = 'mediaProperties'>
+        <h2> Playback Speed </h2>
+        <button id="100%Playback">100%</button>
+        <button id="50%Playback">50%</button>
+        <button id="25%Playback">25%</button>
+      </div>
+
+      <div class = 'panelConsole'>
+        <h2> Console </h2>
+        <textarea id="logArea" cols="40" rows="20"></textarea>
+      </div>
+
+      <div class = 'pluginControls'>
+        <h2> Plug-In Controls</h2>
+        <button id="clearWhiteboard">Clear Whiteboard</button>
+        <button id="toggleZoom"> Toggle Zoom</button>
+        <button id="toggleFollow">Toggle Follow</button>
+      </div>
+    
+    </div>
+
+    <script>
+      const apiURL = 'http://127.0.0.1:8869/call';
+
+      const getVersion = document.getElementById("getVersion");
+      const mediaInfoUpdate = document.getElementById("mediaInfoUpdate");
+      const rewind10 = document.getElementById("rewind10S");
+      const frameRewind = document.getElementById("frameBack");
+      const scrubber = document.getElementById('scrubber');
+      const timecode = document.getElementById('timecode');
+      const frameFwd = document.getElementById("frameForward");
+      const forward10 = document.getElementById("forward10S");
+      const playButton = document.getElementById("playButton");
+      const pauseButton = document.getElementById("pauseButton");
+      const playback100 = document.getElementById("100%Playback");
+      const playback50 = document.getElementById("50%Playback");
+      const playback25 = document.getElementById("25%Playback");
+      const clearWhiteboard = document.getElementById("clearWhiteboard");
+      const toggleZoom = document.getElementById("toggleZoom");
+      const toggleFollow = document.getElementById("toggleFollow");
+
+      let requestType, message, errorMessage, responseData;
+
+      async function httpCall() {
+        try {
+          const resp = await
+          fetch(`${apiURL}/${requestType}`, {
+              method: "POST",
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify(message)
+              });  
+          
+          const data = await resp.json();
+          return data
+
+          } catch (e) {
+            if (e instanceof TypeError) {
+              logArea.value = `${errorMessage}`;
+            
+      }}};
+
+      async function consoleLog(data) {
+        logArea.value = JSON.stringify(data, null, 2);
+      }
+
+      getVersion.addEventListener('click', handleGetVersion);
+        async function handleGetVersion() {
+          requestType = 'GetVersion'
+          message = {
+            'request-type': 'GetVersion',
+            'message-id': 'GetVersion',
+          }
+          errorMessage = 'Get Version Error'
+            
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      rewind10.addEventListener('click', handleRewind10S);
+        async function handleRewind10S() {
+          requestType = 'OffsetMediaInputCursor'
+          message = {
+            'request-type': 'OffsetMediaInputCursor',
+            'message-id': '- 10S',
+            'inputName': 'VOD',
+            'mediaCursorOffset': -12000,
+          }
+          errorMessage = '-10s Error'
+
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      frameRewind.addEventListener('click', handleFrameBack);
+        async function handleFrameBack() {
+          requestType = 'OffsetMediaInputCursor'
+          message = {
+            'request-type': 'OffsetMediaInputCursor',
+            'message-id': 'Frame Backward',
+            'inputName': 'VOD',
+            'mediaCursorOffset': -1000,
+          }
+          errorMessage = 'Frame Forward Error'
+          
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      scrubber.addEventListener("input", () => {
+        const range_value = scrubber.value;
+        const time = convertToTimecode(range_value);
+
+        function convertToTimecode(value) {
+          const minutes = Math.floor(value / 60);
+          const seconds = Math.floor(value % 60).toString().padStart(2,"0");
+          return `${minutes}:${seconds}`;
+        }
+
+        timecode.innerText = time;
+        
+        function convertToMilliseconds(range_value) {
+          const milliseconds = range_value * 1000;
+          return milliseconds;
+        }
+        
+        // convertToMilliseconds(range_value);
+
+        milliseconds = convertToMilliseconds(range_value);
+        handleVodScrubber(milliseconds);
+      });
+
+
+        async function handleVodScrubber(milliseconds) {
+          requestType = 'SetMediaInputCursor'
+          message = {
+            'request-type': 'SetMediaInputCursor',
+            'message-id': 'SetMediaInputCursor',
+            'inputName': 'VOD',
+            'mediaCursor': milliseconds,
+          };
+          errorMessage = 'Vod Scrubber Error'
+
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      frameFwd.addEventListener('click',handleFrameForward)
+        async function handleFrameForward() {
+          requestType = 'OffsetMediaInputCursor'
+          message = {
+            'request-type': 'OffsetMediaInputCursor',
+            'message-id': 'Frame Forward',
+            'inputName': 'VOD',
+            'mediaCursorOffset': 1000,
+          }
+          errorMessage = 'Frame Forward Error'
+          
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      forward10.addEventListener('click', handleForward10S)  
+        async function handleForward10S() {
+          requestType = 'OffsetMediaInputCursor'
+          message = {
+            'request-type': 'OffsetMediaInputCursor',
+            'message-id': '+ 10S',
+            'inputName': 'VOD',
+            'mediaCursorOffset': 12000,
+          }
+          errorMessage = '+10s Error'
+
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      playButton.addEventListener('click', handlePlayMediaInput);
+        async function handlePlayMediaInput() {
+          requestType = 'TriggerMediaInputAction'
+          message = {
+            'request-type': 'TriggerMediaInputAction',
+            'message-id': 'Play Button',
+            'inputName': 'VOD',
+            'mediaAction': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PLAY',
+          }
+          errorMessage = 'Play Button Error'
+
+          const data = await httpCall(requestType, message, errorMessage);
+          consoleLog(data);
+        };
+
+      pauseButton.addEventListener('click', handlePauseMediaInput);
+        async function handlePauseMediaInput() {
+          requestType = 'TriggerMediaInputAction'
+          message = {
+            'request-type': 'TriggerMediaInputAction',
+            'message-id': 'Pause Button',
+            'inputName': 'VOD',
+            'mediaAction': 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_PAUSE',
+          }
+          errorMessage = 'Pause Button Error'
+
+          const data = await httpCall(requestType, message, errorMessage);
+
+          consoleLog(data);
+        };
+
+      playback100.addEventListener('click', handlePlayback100);
+        async function handlePlayback100() {
+          mediaCursor = await handleMediaUpdate();
+          
+          requestType = 'SetInputSettings'
+          message = {
+            "requestType": "SetInputSettings",
+            "inputName": "VOD",
+            "inputSettings": {
+              "speed_percent" : 100
+            },
+            "overlay": true,
+          }
+          errorMessage = 'Playback 100% Error';
+          
+          const data = await httpCall(requestType, message, errorMessage);
+          
+          handleVodScrubber(mediaCursor);
+
+          consoleLog(data);
+        };
+
+      playback50.addEventListener('click', handlePlayback50);
+        async function handlePlayback50() {
+          mediaCursor = await handleMediaUpdate();
+
+          requestType = 'SetInputSettings'
+          message = {
+            "requestType": "SetInputSettings",
+            "inputName": "VOD",
+            "inputSettings": {
+              "speed_percent" : 50
+            },
+            "overlay": true,
+          }
+          errorMessage = 'Playback 50% Error';
+
+          const data = await httpCall(requestType, message, errorMessage);
+          
+          handleVodScrubber(mediaCursor);
+
+          consoleLog(data);
+        };
+
+      playback25.addEventListener('click', handlePlayback25);
+        async function handlePlayback25() {
+          mediaCursor = await handleMediaUpdate();
+
+          requestType = 'SetInputSettings'
+          message = {
+            "requestType": "SetInputSettings",
+            "inputName": "VOD",
+            "inputSettings": {
+              "speed_percent" : 25
+            },
+            "overlay": true,
+          }
+          errorMessage = 'Playback 25% Error';
+
+          const data = await httpCall(requestType, message, errorMessage);
+          handleVodScrubber(mediaCursor);
+
+          consoleLog(data);
+        };
+
+      mediaInfoUpdate.addEventListener('click', handleMediaUpdate);
+        async function handleMediaUpdate() {
+          requestType = 'GetMediaInputStatus'
+          message = {
+            "requestType" : "GetMediaInputStatus",
+            "inputName" : "VOD",
+          }
+          errorMessage = 'Media Interface Update Error';
+
+          const data = await httpCall(requestType, message, errorMessage);
+
+          const mediaLength = data.requestResult.responseData.mediaDuration;
+          const mediaCursor = data.requestResult.responseData.mediaCursor;
+
+          scrubber.max = mediaLength/1000;
+          scrubber.value = mediaCursor / 1000;
+
+          consoleLog(data);
+        return mediaCursor;  
+        };
+
+      clearWhiteboard.addEventListener('click', handleClearWhiteboard);
+        async function handleClearWhiteboard() {
+            requestType = 'TriggerHotkeyByName'
+            message = {
+              "requestType" : "TriggerHotkeyByName",
+              "hotkeyName" : "whiteboard.clear",
+            }
+            errorMessage = 'Clear Whiteboard Error';
+
+            const data = await httpCall(requestType, message, errorMessage);
+
+            consoleLog(data);
+          };
+
+      toggleZoom.addEventListener('click', handleToggleZoom);
+        async function handleToggleZoom() {
+            requestType = 'TriggerHotkeyByName'
+            message = {
+              "requestType" : "TriggerHotkeyByName",
+              "hotkeyName" : "zoom.toggle",
+            }
+            errorMessage = 'Toggle Zoom Error';
+
+            const data = await httpCall(requestType, message, errorMessage);
+
+            consoleLog(data);
+          };
+
+      toggleFollow.addEventListener('click', handleToggleFollow);
+        async function handleToggleFollow() {
+            requestType = 'TriggerHotkeyByName'
+            message = {
+              "requestType" : "TriggerHotkeyByName",
+              "hotkeyName" : "follow.toggle",
+            }
+            errorMessage = 'Toggle Follow Error';
+
+            const data = await httpCall(requestType, message, errorMessage);
+
+            consoleLog(data);
+          };
+
+        
+    </script>
+  </body>
+</html>
